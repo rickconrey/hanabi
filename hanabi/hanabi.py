@@ -79,34 +79,37 @@ class Player(object):
         pass
 
     def recv_information(self, information):
+        reorder = []
         if isinstance(information, str):
-            for i in range(len(self.hand)):
-                if self.hand[i].color == information:
+            for i, card in enumerate(self.hand):
+                if card.color == information:
                     if information not in self.knowns[i]:
                         self.knowns[i].insert(0, information)
-                        self.reorder(i)
+                        reorder.append(i)
         else:
             for i in range(len(self.hand)):
                 if self.hand[i].number == information:
                     if information not in self.knowns[i]:
                         self.knowns[i].append(information)
-                        self.reorder(i)
+                        reorder.append(i)
+        self.reorder(reorder)
 
-    def reorder(self, index):
-        card = self.hand[index]
-        known = self.knowns[index]
-        self.hand.pop(index)
-        self.knowns.pop(index)
-        inserted = 0
-        for i in range(len(self.knowns)):
-            if self.knowns[i] == []:
-                self.hand.insert(i, card)
-                self.knowns.insert(i, known)
-                inserted = 1
-                break
-        if inserted != 1:
-            self.hand.append(card)
-            self.knowns.append(known)
+    def reorder(self, reorder):
+        for index in reorder:
+            card = self.hand[index]
+            known = self.knowns[index]
+            self.hand.pop(index)
+            self.knowns.pop(index)
+            inserted = 0
+            for i in range(len(self.knowns)):
+                if self.knowns[i] == []:
+                    self.hand.insert(i, card)
+                    self.knowns.insert(i, known)
+                    inserted = 1
+                    break
+            if inserted != 1:
+                self.hand.append(card)
+                self.knowns.append(known)
             
     def __repr__(self):
         return "<Player knowns:%s hand:%s>" % (self.knowns, self.hand)
@@ -184,6 +187,8 @@ class Game(object):
             ai = isinstance(player, AI)
             decision = ()
             if ai:
+                player.time = self.board.time
+                player.bombs = self.board.bombs
                 player.partner_hand = self.board.players[0].hand
                 player.partner_known = self.board.players[0].knowns
                 player.board = self.board.board
@@ -196,7 +201,7 @@ class Game(object):
             if choice == '0': # discard
                 if ai:
                     index = decision[1]
-                    print choice
+                    print "AI == Discard"
                 else:
                     index = int(raw_input("Card index: ") or "-1")
                     
@@ -211,7 +216,7 @@ class Game(object):
             elif choice == '1': # play card
                 if ai:
                     index = decision[1]
-                    print choice
+                    print "AI == Play Card"
                 else:
                     index = int(raw_input("Card index: "))
                 card = player.play(index)
@@ -227,7 +232,7 @@ class Game(object):
                 if ai:
                     index = decision[1]
                     info = decision[2]
-                    print choice
+                    print "AI == Give Info"
                 else:
                     index = int(raw_input("Card index: "))
                     info = raw_input("Color(0) or Number(1)")
@@ -290,6 +295,8 @@ class AI(Player):
         self.GIVE_INFORMATION = 2
         self.COLOR = '0'
         self.NUMBER = '1'
+        self.time = 8
+        self.bombs = 3
         self.next_playable = []
         self.partner_hand = []
         self.partner_known = []
@@ -298,35 +305,37 @@ class AI(Player):
         super(AI, self).__init__()
     
     def turn(self):
-        print "DEBUG == self.next_playable: %s" % self.next_playable
         # check for playable card and play if found
-        for np in self.next_playable:
-            #card = Card(np[0], np[1])
-            print "DEBUG == card: %s" % str(np)
-            if np in self.knowns:
-                return (self.PLAY, self.knowns.index(np))
+        for index, n_playable in enumerate(self.next_playable):
+            if n_playable in self.knowns:
+                return (self.PLAY, index)
+            # check if card is already played
+            if self.board[n_playable[0]] != []:
+                if n_playable[1] == self.board[n_playable[0]][-1].number:
+                    return (self.DISCARD, index)
 
         # find if we can give information.
-        lowest = 0
-        give_info = 0
-        for i in range(len(self.partner_hand)):
-            card = self.partner_hand[i]
-            if len(self.partner_known[i]) < 2:
-                give_info = 1
-                if card.number < self.partner_hand[lowest].number:
-                    lowest = i
-        if give_info > 0:
-            print "DEBUG == lowest: %s" % (lowest)
-            print "DEBUG == self.partner_known: %s" % (self.partner_known)
-            if self.partner_known[lowest] != []:
-                if isinstance(self.partner_known[lowest][0], str):
-                    print "Number: %s" % (self.partner_hand[lowest].number)
-                    return (self.GIVE_INFORMATION, lowest, self.NUMBER)
+        if self.time > 0:
+            lowest = 0
+            give_info = 0
+            for i in range(len(self.partner_hand)):
+                card = self.partner_hand[i]
+                if len(self.partner_known[i]) < 2:
+                    give_info = 1
+                    if card.number < self.partner_hand[lowest].number:
+                        lowest = i
+            if give_info > 0:
+                print "DEBUG == lowest: %s" % (lowest)
+                print "DEBUG == self.partner_known: %s" % (self.partner_known)
+                if self.partner_known[lowest] != []:
+                    if isinstance(self.partner_known[lowest][0], str):
+                        print "Number: %s" % (self.partner_hand[lowest].number)
+                        return (self.GIVE_INFORMATION, lowest, self.NUMBER)
+                    else:
+                        print "Color: %s" % (self.partner_hand[lowest].color)
+                        return (self.GIVE_INFORMATION, lowest, self.COLOR)         
                 else:
-                    print "Color: %s" % (self.partner_hand[lowest].color)
-                    return (self.GIVE_INFORMATION, lowest, self.COLOR)         
-            else:
-                return (self.GIVE_INFORMATION, lowest, self.NUMBER)
+                    return (self.GIVE_INFORMATION, lowest, self.NUMBER)
             
         # if none of the above, discard card farthest to the right.
         return (self.DISCARD, -1) 
