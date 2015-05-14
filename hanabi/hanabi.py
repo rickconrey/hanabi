@@ -10,7 +10,7 @@ class Card(object):
             through 5.
     """
     colors = ["Red", "Yellow", "Green", "Blue", "White", "Rainbow"]
-    
+
     def __init__(self, color, number):
         self.color = color
         self.number = number
@@ -33,10 +33,10 @@ class Deck(object):
             elif variation == 1:
                 if c == "Rainbow":
                     numbers = [1,2,3,4,5]
-                    
+
             for n in numbers:
                 self.deck.append(Card(c,n))
-                    
+
         self.count = len(self.deck)
 
     def shuffle(self):
@@ -45,7 +45,7 @@ class Deck(object):
     def draw(self):
         if self.count == 0:
             return -1
-        
+
         c = self.deck.pop()
         self.count = len(self.deck)
         return c
@@ -55,7 +55,7 @@ class Deck(object):
 
 class Player(object):
     choices = """Discard (0). \nPlay (1). \nGive Information (2).\n"""
-    
+
     def __init__(self):
         self.hand = []
         self.knowns = [[], [], [], [], []]
@@ -110,13 +110,13 @@ class Player(object):
             if inserted != 1:
                 self.hand.append(card)
                 self.knowns.append(known)
-            
+
     def __repr__(self):
         return "<Player knowns:%s hand:%s>" % (self.knowns, self.hand)
 
     def __str__(self):
         cards = []
-        
+
         for h in self.hand:
             cards.append(str(h))
 
@@ -132,9 +132,9 @@ class Board(object):
         self.deck = Deck(0)
         self.board = {"Red":[], "Yellow":[], "Green":[],
                       "Blue":[], "White":[], "Rainbow":[]}
-        
+
         self.deck.shuffle()
-        
+
         #for p in range(players):
         #    self.players.append(Player())
         #    if players < 4:
@@ -164,7 +164,7 @@ class Board(object):
                         self.time += 1
             else:
                 self.bombs -= 1
-           
+
     def __repr__(self):
         return "<Board players:%s bombs:%s time:%s>" % (len(self.players),
                                                         self.bombs,
@@ -183,7 +183,7 @@ class Game(object):
             self.print_board(self.board.player_turn)
             player = self.board.players[self.board.player_turn]
             partner = self.board.players[(self.board.player_turn + 1) % 2]
-            
+
             ai = isinstance(player, AI)
             decision = ()
             if ai:
@@ -195,24 +195,24 @@ class Game(object):
                 player.calculate_next_playable()
                 decision = player.turn()
                 choice = str(decision[0])
-            else:    
+            else:
                 choice = raw_input(Player.choices)
-            
+
             if choice == '0': # discard
                 if ai:
                     index = decision[1]
                     print "AI == Discard"
                 else:
                     index = int(raw_input("Card index: ") or "-1")
-                    
+
                 player.discard(index)
-                
+
                 self.draw_card(player)
-                    
+
                 if self.board.time < 8:
                     self.board.time += 1
                 #player.print_hand()
-                
+
             elif choice == '1': # play card
                 if ai:
                     index = decision[1]
@@ -221,11 +221,11 @@ class Game(object):
                     index = int(raw_input("Card index: "))
                 card = player.play(index)
                 self.board.add_to_board(card)
-                
+
                 self.draw_card(player)
-                    
+
                 #player.print_hand()
-                
+
             elif choice == '2': # give information
                 if self.board.time == 0:
                     return
@@ -236,7 +236,7 @@ class Game(object):
                 else:
                     index = int(raw_input("Card index: "))
                     info = raw_input("Color(0) or Number(1)")
-                    
+
                 card = partner.hand[index]
                 self.board.time -= 1
                 if info == '0':
@@ -246,10 +246,10 @@ class Game(object):
                 partner.recv_information(info)
             else:
                 return
-                
+
             self.board.player_turn = (self.board.player_turn + 1) % 2
-            
-                
+
+
     def draw_card(self, player):
         inserted = 0
         for i in range(len(player.knowns)):
@@ -262,15 +262,15 @@ class Game(object):
         if inserted == 0:
             player.hand.append(self.board.deck.draw())
             player.knowns.append([])
-            
-        
+
+
     def print_board(self, player_number):
         b = self.board.board
         cards = []
         for key in b:
             if b[key] != []:
                 cards.append(str(b[key][-1]))
-        
+
         print "\n"
         print "Time: %s" % (self.board.time)
         print "Bombs: %s" % (self.board.bombs)
@@ -284,10 +284,10 @@ class Game(object):
         print "Knowns %s" % (self.board.players[player_number].knowns)
         print "\n"
 
-        
+
     def __repr__(self):
         return "<Game players:%s>" % (len(self.board.players))
-    
+
 class AI(Player):
     def __init__(self):
         self.DISCARD = 0
@@ -303,7 +303,7 @@ class AI(Player):
         self.board = {"Red":[], "Yellow":[], "Green":[],
                       "Blue":[], "White":[], "Rainbow":[]}
         super(AI, self).__init__()
-    
+
     def turn(self):
         # check for playable card and play if found
         for index, n_playable in enumerate(self.next_playable):
@@ -333,13 +333,13 @@ class AI(Player):
                         return (self.GIVE_INFORMATION, lowest, self.NUMBER)
                     else:
                         print "Color: %s" % (self.partner_hand[lowest].color)
-                        return (self.GIVE_INFORMATION, lowest, self.COLOR)         
+                        return (self.GIVE_INFORMATION, lowest, self.COLOR)      
                 else:
                     return (self.GIVE_INFORMATION, lowest, self.NUMBER)
-            
+
         # if none of the above, discard card farthest to the right.
-        return (self.DISCARD, -1) 
-                
+        return (self.DISCARD, -1)
+
     def calculate_next_playable(self):
         self.next_playable = []
         for color in Card.colors:
@@ -349,5 +349,3 @@ class AI(Player):
                 self.next_playable.append([color,
                                            self.board[color][-1].number + 1])
 
-    
-        
