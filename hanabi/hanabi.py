@@ -22,38 +22,59 @@ class Card(object):
         return "<Card color:%s number:%s>" % (self.color, self.number)
 
 class Deck(object):
+    """A deck of cards.
+
+    There are many variations of Hanabi, the most notable
+    are whether or not to include the rainbow cards in the deck.
+
+    Attributes:
+    """
+
     def __init__(self, variation):
         self.deck = []
         self.variation = variation
         numbers = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
-        for c in Card.colors:
+        for color in Card.colors:
             if variation == 0:
-                if c == "Rainbow":
+                if color == "Rainbow":
                     break
             elif variation == 1:
-                if c == "Rainbow":
-                    numbers = [1,2,3,4,5]
+                if color == "Rainbow":
+                    numbers = [1, 2, 3, 4, 5]
 
-            for n in numbers:
-                self.deck.append(Card(c,n))
+            for number in numbers:
+                self.deck.append(Card(color, number))
 
         self.count = len(self.deck)
 
     def shuffle(self):
+        """Shuffle the deck of Hanabi cards.
+        """
+
         random.shuffle(self.deck)
 
     def draw(self):
+        """Draw a card from the deck.
+        """
+
         if self.count == 0:
             return -1
 
-        c = self.deck.pop()
+        card = self.deck.pop()
         self.count = len(self.deck)
-        return c
+        return card
 
     def __repr__(self):
         return "<Deck variation:%s count:%s>" % (self.variation, self.count)
 
 class Player(object):
+    """Player of Hanabi.
+
+    The player class keeps track of the player's hand as well as known cards.
+
+    Attributes:
+
+    """
     choices = """Discard (0). \nPlay (1). \nGive Information (2).\n"""
 
     def __init__(self):
@@ -61,6 +82,8 @@ class Player(object):
         self.knowns = [[], [], [], [], []]
 
     def print_hand(self):
+        """Print hand in a human readable way.
+        """
         cards = []
         for card in self.hand:
             cards.append(str(card))
@@ -68,17 +91,33 @@ class Player(object):
         return cards
 
     def discard(self, index):
-        card = self.hand.pop(index)
+        """Discard selected card from hand.
+
+        Args:
+            index: index of card to be discarded.
+        """
+        self.hand.pop(index)
         self.knowns.pop(index)
 
     def play(self, index):
+        """Play a card to the board.
+
+        Args:
+            index: index of card to play.
+
+        Returns:
+            The card that is to be played.
+        """
         self.knowns.pop(index)
         return self.hand.pop(index)
 
-    def give_information(self, information):
-        pass
-
     def recv_information(self, information):
+        """Receive information about hand from another player. All cards
+        with the same color or number are identified.
+
+        Args:
+            information: either color or number of a card.
+        """
         reorder = []
         if isinstance(information, str):
             for i, card in enumerate(self.hand):
@@ -95,6 +134,11 @@ class Player(object):
         self.reorder(reorder)
 
     def reorder(self, reorder):
+        """Reorder cards in hand after receiving information.
+
+        Args:
+            reorder: the index of the card to be moved.
+        """
         for index in reorder:
             card = self.hand[index]
             known = self.knowns[index]
@@ -117,13 +161,21 @@ class Player(object):
     def __str__(self):
         cards = []
 
-        for h in self.hand:
-            cards.append(str(h))
+        for card in self.hand:
+            cards.append(str(card))
 
         return str({"hand": cards, "knowns": self.knowns})
 
 
 class Board(object):
+    """Board to keep track of Hanabi.
+
+    Board keeps track of players, player's turn, bombs, time, deck, and
+    what has been played.
+
+    Attributes:
+    """
+
     def __init__(self, players):
         self.players = []
         self.player_turn = 0
@@ -141,14 +193,17 @@ class Board(object):
         #        for i in range(5):
         #            self.players[p].hand.append(self.deck.draw())
         self.players.append(Player())
+	self.players.append(AI())
         for i in range(5):
             self.players[0].hand.append(self.deck.draw())
-
-        self.players.append(AI())
-        for i in range(5):
             self.players[1].hand.append(self.deck.draw())
 
     def add_to_board(self, card):
+        """Add a card to the board.
+
+        Args:
+            card: Card to be added.
+        """
         if card.number == 1:
             if self.board[card.color] == []:
                 self.board[card.color].append(card)
@@ -171,6 +226,14 @@ class Board(object):
                                                         self.time)
 
 class Game(object):
+    """Game contains methods to play the game.
+
+    Game handles the game play.  Keeping track of whose turn it is, and
+    figuring out when the game is over.
+
+    Attributes:
+    """
+
     def __init__(self):
         self.board = Board(2)
         for i in range(len(self.board.players)):
@@ -179,14 +242,17 @@ class Game(object):
             print player.print_hand()
 
     def play(self):
+        """Start the game.
+        """
+
         while self.board.bombs > 0:
             self.print_board(self.board.player_turn)
             player = self.board.players[self.board.player_turn]
             partner = self.board.players[(self.board.player_turn + 1) % 2]
 
-            ai = isinstance(player, AI)
+            ai_player = isinstance(player, AI)
             decision = ()
-            if ai:
+            if ai_player:
                 player.time = self.board.time
                 player.bombs = self.board.bombs
                 player.partner_hand = self.board.players[0].hand
@@ -199,7 +265,7 @@ class Game(object):
                 choice = raw_input(Player.choices)
 
             if choice == '0': # discard
-                if ai:
+                if ai_player:
                     index = decision[1]
                     print "AI == Discard"
                 else:
@@ -214,7 +280,7 @@ class Game(object):
                 #player.print_hand()
 
             elif choice == '1': # play card
-                if ai:
+                if ai_player:
                     index = decision[1]
                     print "AI == Play Card"
                 else:
@@ -229,7 +295,7 @@ class Game(object):
             elif choice == '2': # give information
                 if self.board.time == 0:
                     return
-                if ai:
+                if ai_player:
                     index = decision[1]
                     info = decision[2]
                     print "AI == Give Info"
@@ -251,13 +317,19 @@ class Game(object):
 
 
     def draw_card(self, player):
+        """Draw a card from the deck.
+
+        Args:
+            player: person receiving the card.
+        """
+
         inserted = 0
         for i in range(len(player.knowns)):
             if player.knowns[i] == []:
                 player.hand.insert(i, self.board.deck.draw())
                 player.knowns.insert(i, [])
                 inserted = 1
-                break;
+                break
 
         if inserted == 0:
             player.hand.append(self.board.deck.draw())
@@ -265,11 +337,17 @@ class Game(object):
 
 
     def print_board(self, player_number):
-        b = self.board.board
+        """Print the board from a player's perspective.
+
+        Args:
+            player_number: print from this player's perspective.
+        """
+
+        board = self.board.board
         cards = []
-        for key in b:
-            if b[key] != []:
-                cards.append(str(b[key][-1]))
+        for key in board:
+            if board[key] != []:
+                cards.append(str(board[key][-1]))
 
         print "\n"
         print "Time: %s" % (self.board.time)
@@ -289,12 +367,25 @@ class Game(object):
         return "<Game players:%s>" % (len(self.board.players))
 
 class AI(Player):
+    """Artificial Intelligence for Hanabi.
+
+    AI allows the python to simulate a player.
+
+    Attributes:
+    """
+
+    DISCARD = 0
+    PLAY = 1
+    GIVE_INFORMATION = 2
+    COLOR = '0'
+    NUMBER = '1'
+
     def __init__(self):
-        self.DISCARD = 0
-        self.PLAY = 1
-        self.GIVE_INFORMATION = 2
-        self.COLOR = '0'
-        self.NUMBER = '1'
+        #self.DISCARD = 0
+        #self.PLAY = 1
+        #self.GIVE_INFORMATION = 2
+        #self.COLOR = '0'
+        #self.NUMBER = '1'
         self.time = 8
         self.bombs = 3
         self.next_playable = []
@@ -305,14 +396,18 @@ class AI(Player):
         super(AI, self).__init__()
 
     def turn(self):
+        """Signal AI to play.  All of the logic for AI to figure out
+        what to do.
+        """
+
         # check for playable card and play if found
         for index, n_playable in enumerate(self.next_playable):
             if n_playable in self.knowns:
-                return (self.PLAY, index)
+                return (AI.PLAY, index)
             # check if card is already played
             if self.board[n_playable[0]] != []:
                 if n_playable[1] == self.board[n_playable[0]][-1].number:
-                    return (self.DISCARD, index)
+                    return (AI.DISCARD, index)
 
         # find if we can give information.
         if self.time > 0:
@@ -330,17 +425,20 @@ class AI(Player):
                 if self.partner_known[lowest] != []:
                     if isinstance(self.partner_known[lowest][0], str):
                         print "Number: %s" % (self.partner_hand[lowest].number)
-                        return (self.GIVE_INFORMATION, lowest, self.NUMBER)
+                        return (AI.GIVE_INFORMATION, lowest, AI.NUMBER)
                     else:
                         print "Color: %s" % (self.partner_hand[lowest].color)
-                        return (self.GIVE_INFORMATION, lowest, self.COLOR)      
+                        return (AI.GIVE_INFORMATION, lowest, AI.COLOR)
                 else:
-                    return (self.GIVE_INFORMATION, lowest, self.NUMBER)
+                    return (AI.GIVE_INFORMATION, lowest, AI.NUMBER)
 
         # if none of the above, discard card farthest to the right.
-        return (self.DISCARD, -1)
+        return (AI.DISCARD, -1)
 
     def calculate_next_playable(self):
+        """Calculate the next card that the AI will be able to play.
+        """
+
         self.next_playable = []
         for color in Card.colors:
             if self.board[color] == []:
