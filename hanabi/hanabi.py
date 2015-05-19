@@ -188,11 +188,6 @@ class Board(object):
 
         self.deck.shuffle()
 
-        #for p in range(players):
-        #    self.players.append(Player())
-        #    if players < 4:
-        #        for i in range(5):
-        #            self.players[p].hand.append(self.deck.draw())
         self.players.append(Player())
 	self.players.append(AI())
         for i in range(5):
@@ -382,11 +377,6 @@ class AI(Player):
     NUMBER = '1'
 
     def __init__(self):
-        #self.DISCARD = 0
-        #self.PLAY = 1
-        #self.GIVE_INFORMATION = 2
-        #self.COLOR = '0'
-        #self.NUMBER = '1'
         self.time = 8
         self.bombs = 3
         self.next_playable = []
