@@ -134,7 +134,8 @@ class Player(object):
         self.reorder(reorder)
 
     def reorder(self, reorder):
-        """Reorder cards in hand after receiving information.
+        """Reorder cards in hand after receiving information. Place like colors
+        next to each, highest number on the left. 
 
         Args:
             reorder: the index of the card to be moved.
@@ -145,8 +146,8 @@ class Player(object):
             self.hand.pop(index)
             self.knowns.pop(index)
             inserted = 0
-            for i in range(len(self.knowns)):
-                if self.knowns[i] == []:
+            for i, knowns in enumerate(self.knowns)):
+                if knowns == []:
                     self.hand.insert(i, card)
                     self.knowns.insert(i, known)
                     inserted = 1
