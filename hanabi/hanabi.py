@@ -140,21 +140,71 @@ class Player(object):
         Args:
             reorder: the index of the card to be moved.
         """
-        for index in reorder:
-            card = self.hand[index]
-            known = self.knowns[index]
-            self.hand.pop(index)
-            self.knowns.pop(index)
-            inserted = 0
-            for i, knowns in enumerate(self.knowns)):
-                if knowns == []:
-                    self.hand.insert(i, card)
-                    self.knowns.insert(i, known)
-                    inserted = 1
-                    break
-            if inserted != 1:
-                self.hand.append(card)
-                self.knowns.append(known)
+        list_color = []
+        list_number = []
+        order = []
+        # find which cards have known information
+        for i, known in enumerate(self.knowns):
+            if known != []:
+                if known[0] in Card.colors:
+                    list_color.append(i)
+                else:
+                    list_number.append(i)
+
+        # sort by color
+        if list_color != []:
+            order = self.__color_sort(list_color)
+
+        place = 0
+        for index in order:
+            card = self.hand.pop(index)
+            known = self.knowns.pop(index)
+
+            self.hand.insert(place, card)
+            self.knowns.insert(place, known)
+
+            place += 1
+            #inserted = 0
+            #for i, knowns in enumerate(self.knowns)):
+            #    if knowns == []:
+            #        self.hand.insert(i, card)
+            #        self.knowns.insert(i, known)
+            #        inserted = 1
+            #        break
+            #if inserted != 1:
+            #    self.hand.append(card)
+            #    self.knowns.append(known)
+
+    def __color_sort(self, lst):
+        """Merge sort a list of knowns in order of Card.colors.
+
+        Args:
+            lst: a list of indecies for the cards in hand to be sorted.
+
+        Return:
+            a list in the order of Card.colors
+        """
+        if len(lst) == 1:
+            return lst
+
+        left = self.__color_sort(lst[:len(lst)/2])
+        right = self.__color_sort(lst[len(lst)/2:])
+        order = []
+        while (len(left) > 0) and (len(right) > 0):
+            color_left = Card.colors.index(self.knowns[left[0]][0])
+            color_right = Card.colors.index(self.knowns[right[0]][0])
+
+            if color_left <= color_right:
+                order.append(left.pop(0))
+            else:
+                order.append(right.pop(0))
+
+        while len(left) > 0:
+            order.append(left.pop(0))
+        while len(right) > 0:
+            order.append(right.pop(0))
+
+        return order
 
     def __repr__(self):
         return "<Player knowns:%s hand:%s>" % (self.knowns, self.hand)
@@ -189,7 +239,7 @@ class Board(object):
         self.deck.shuffle()
 
         self.players.append(Player())
-	self.players.append(AI())
+        self.players.append(AI())
         for i in range(5):
             self.players[0].hand.append(self.deck.draw())
             self.players[1].hand.append(self.deck.draw())
