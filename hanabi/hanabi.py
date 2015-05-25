@@ -118,27 +118,22 @@ class Player(object):
         Args:
             information: either color or number of a card.
         """
-        reorder = []
+
         if isinstance(information, str):
             for i, card in enumerate(self.hand):
                 if card.color == information:
                     if information not in self.knowns[i]:
                         self.knowns[i].insert(0, information)
-                        reorder.append(i)
         else:
             for i in range(len(self.hand)):
                 if self.hand[i].number == information:
                     if information not in self.knowns[i]:
                         self.knowns[i].append(information)
-                        reorder.append(i)
-        self.reorder(reorder)
+        self.reorder()
 
-    def reorder(self, reorder):
+    def reorder(self):
         """Reorder cards in hand after receiving information. Place like colors
-        next to each, highest number on the left. 
-
-        Args:
-            reorder: the index of the card to be moved.
+        next to each, highest number on the left.
         """
         list_color = []
         list_number = []
